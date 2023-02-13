@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>9da586cd1b54e9508fa442e7cc4bcb36</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_trigger">
+    <sys_trigger action="INSERT_OR_UPDATE">
+        <application/>
+        <business_calendar/>
+        <calendar/>
+        <claimed_by/>
+        <document/>
+        <document_key/>
+        <entered_time>1970-01-01 00:00:00</entered_time>
+        <error_count>0</error_count>
+        <job_context/>
+        <job_id display_value="RunScriptJob">81c92ce9c0a8016400e5f0d2f784ea78</job_id>
+        <last_error/>
+        <log>false</log>
+        <maintenance>false</maintenance>
+        <max_drift/>
+        <name>x_snc_xinstcompare_install_global</name>
+        <next_action>2022-12-31 23:00:00</next_action>
+        <offset/>
+        <offset_type/>
+        <parent/>
+        <priority>100</priority>
+        <processing_duration>0</processing_duration>
+        <repeat/>
+        <replication_originator>2c8bdc5adb5463806578f22ebf9619a0</replication_originator>
+        <rollback_context_id/>
+        <run_count>0</run_count>
+        <run_dayofmonth/>
+        <run_dayofweek>1</run_dayofweek>
+        <run_month>1</run_month>
+        <run_time>1969-12-31 23:00:00</run_time>
+        <run_weekinmonth>1</run_weekinmonth>
+        <script>addGlobalScript();&#13;
+addGlobalMessages();&#13;
+&#13;
+function addGlobalScript() {&#13;
+	var bUpdate = false;&#13;
+	var grScriptInclude = new GlideRecord('sys_script_include');&#13;
+	grScriptInclude.addEncodedQuery('name=CrossInstanceCompareGlobal');&#13;
+	grScriptInclude.query();&#13;
+	if (grScriptInclude.next()) {&#13;
+		bUpdate = true;&#13;
+	} else {
+		grScriptInclude.setNewGuidValue('551872791b6b9950034520a8ec4bcbd2');&#13;
+	} // if next&#13;
+	grScriptInclude.setValue('name', 'CrossInstanceCompareGlobal');&#13;
+	grScriptInclude.setValue('api_name', 'global.CrossInstanceCompareGlobal');&#13;
+	grScriptInclude.setValue('access', 'public');&#13;
+	grScriptInclude.setValue('description', 'Cross Instance Compare Global Component\nServiceNow Customer Outcomes, Tom Hauri');&#13;
+	grScriptInclude.setValue('script', "var CrossInstanceCompareGlobal = Class.create();\nCrossInstanceCompareGlobal.prototype = {\n\tinitialize: function() {\n\t},\n\n\t// Compare single records using baseline functions not available in scope\n\tcompareRecords: function (grLeft, grRight, aRemoteResult, oResp) {\n\t\tvar _Serializer = new GlideRecordXMLSerializer(); // not available in scope\n\t\tvar _DiffHelper = new DiffHelper(); // not available in scope\n\t\tvar oPayloadLeft = _Serializer.serialize(grLeft);\n\t\tvar oPayloadRight, sLeftHeader, sRightHeader;\n\t\tif (aRemoteResult) {\n\t\t\tsLeftHeader = gs.getMessage('xinstcompare_record_left');\n\t\t\tsRightHeader = gs.getMessage('xinstcompare_record_right');\n\t\t\tvar sInternalType = '';\n\t\t\tvar grRemote = new GlideRecord(grLeft.getTableName());\n\t\t\tgrRemote.initialize();\n\t\t\taRemoteResult.forEach(function(oRemoteRecord) {\n\t\t\t\tObject.keys(oRemoteRecord).forEach(function(sRemoteField) {\n\t\t\t\t\tsInternalType = this.getInternalType(grRemote, sRemoteField);\n\t\t\t\t\tif ((typeof oRemoteRecord[sRemoteField] == 'object') &amp;&amp; (oRemoteRecord[sRemoteField].hasOwnProperty('value'))) {\n\t\t\t\t\t\tgrRemote.setValue(sRemoteField, oRemoteRecord[sRemoteField]['value']);\n\t\t\t\t\t} else if (sInternalType == 'boolean') {\n\t\t\t\t\t\tgrRemote.setValue(sRemoteField, '0');\n\t\t\t\t\t\tif (oRemoteRecord[sRemoteField]['value'] == 'true') {\n\t\t\t\t\t\t\tgrRemote.setValue(sRemoteField, '1');\n\t\t\t\t\t\t} // if bool\n\t\t\t\t\t} else {\n\t\t\t\t\t\tgrRemote.setValue(sRemoteField, oRemoteRecord[sRemoteField]);\n\t\t\t\t\t} // if obj\n\t\t\t\t}, this); // each remote field\n\t\t\t}, this); // each remote record\n\t\t\toPayloadRight = _Serializer.serialize(grRemote);\n\t\t} else {\n\t\t\tsLeftHeader = gs.getMessage('xinstcompare_record_left');\n\t\t\tsRightHeader = gs.getMessage('xinstcompare_record_right');\n\t\t\toPayloadRight = _Serializer.serialize(grRight);\n\t\t} // if rest result\n\t\tvar oDiff = _DiffHelper.diffXMLString(oPayloadLeft, oPayloadRight);\n\t\tif (oDiff == null) {\n\t\t\toResp.valid = false;\n\t\t\toResp.msg = _DiffHelper.infoMessage();\n\t\t} else {\n\t\t\toResp.html = _DiffHelper.getTemplate(oDiff, sLeftHeader, sRightHeader);\n\t\t} // if diff failed\n\t}, // function compareRecords\n\n\t// Get count of records, returns number or Array in Array with value, displayvalue and count per field\n\tcountRecords: function(sTable, sQuery, sField, bDisplayOnly, bQueryNoDomain) {\n\t\tif ((!gs.tableExists(sTable)) || (this.isTableScopeReadable(sTable) != true)) {\n\t\t\treturn -99;\n\t\t} // if table readable\n\t\tvar gaRecord = new GlideAggregate(sTable);\n\t\tif (sQuery) {\n\t\t\tgaRecord.addEncodedQuery(sQuery);\n\t\t} // if query\n\t\tif (sField) {\n\t\t\tvar aRow = [], sFieldValue = '', sFieldDisplayValue = '', iFieldCount = -1;\n\t\t\tvar grRecord = new GlideRecord(sTable);\n\t\t\tif (grRecord.isValidField(sField)) {\n\t\t\t\tgaRecord.addAggregate('COUNT', sField);\n\t\t\t\tif (bQueryNoDomain) {\n\t\t\t\t\tgaRecord.queryNoDomain();\t\n\t\t\t\t} else {\n\t\t\t\t\tgaRecord.query();\n\t\t\t\t} // if no domain\n\t\t\t\twhile (gaRecord.next()){\n\t\t\t\t\tsFieldValue = gaRecord.getValue(sField);\n\t\t\t\t\tsFieldDisplayValue = gaRecord.getDisplayValue(sField);\n\t\t\t\t\tiFieldCount = gaRecord.getAggregate('COUNT', sField);\n\t\t\t\t\tif (bDisplayOnly) {\n\t\t\t\t\t\tsFieldDisplayValue = (sFieldDisplayValue) ? sFieldDisplayValue : sFieldValue;\n\t\t\t\t\t\taRow.push([sTable, sFieldDisplayValue, iFieldCount]);\n\t\t\t\t\t} else {\n\t\t\t\t\t\taRow.push([sTable, sFieldValue, sFieldDisplayValue, iFieldCount]);\n\t\t\t\t\t} // if bDisplayOnly\n\t\t\t\t} // while record\n\t\t\t} else {\n\t\t\t\tiFieldCount = this.countRecords(sTable, sQuery);\n\t\t\t\tif (bDisplayOnly) {\n\t\t\t\t\taRow.push([sTable, '', iFieldCount]);\n\t\t\t\t} else {\n\t\t\t\t\taRow.push([sTable, '', '', iFieldCount]);\n\t\t\t\t} // if bDisplayOnl\n\t\t\t} // if field is not valid return total count with empty field/display\n\t\t\treturn aRow;\n\t\t} else {\n\t\t\tgaRecord.addAggregate('COUNT');\n\t\t\tif (bQueryNoDomain) {\n\t\t\t\tgaRecord.queryNoDomain();\t\n\t\t\t} else {\n\t\t\t\tgaRecord.query();\n\t\t\t} // if no domain\n\t\t\tif (gaRecord.next()) {\n\t\t\t\treturn gaRecord.getAggregate('COUNT');\n\t\t\t} else {\n\t\t\t\treturn -1;\n\t\t\t} // if record\n\t\t} // if field\n\t}, // function countRecords\n\n\tisTableScopeReadable: function(sTableName) {\n\t\tvar grTable = new GlideRecord('sys_db_object');\n\t\tif (grTable.get('name', sTableName)) {\n\t\t\tif ((grTable.getValue('access') == 'package_private') || (!grTable.getValue('read_access'))) {\n\t\t\t\treturn false;\n\t\t\t} // if private\n\t\t} // if table\n\t\treturn true;\n\t}, // function isTableScopeReadable\n\n\t// Get the internal type of a field\n\tgetInternalType: function(grRecord, sFieldName) {\n\t\tvar geElement = grRecord.getElement(sFieldName);\n\t\tvar edElementDescriptor = geElement.getED();\n\t\treturn String(edElementDescriptor.getInternalType());\n\t}, // function getInternalType\n\n\t// Get all fields of a table (including parent tables)\n\tgetAllFields: function(sTableName) {\n\t\tvar aTables = j2js(new TableUtils(sTableName).getTables());\n\t\tvar aAllFields = [];\n\t\tvar grDict = new GlideRecord('sys_dictionary');\n\t\tgrDict.addEncodedQuery('nameIN' + aTables.join(',') + '^internal_type!=collection^ORinternal_type=NULL');\n\t\tgrDict.query();\n\t\twhile (grDict.next()) {\n\t\t\taAllFields.push(grDict.getValue('element'));\n\t\t} // all fields\n\t\treturn aAllFields.sort();\n\t}, // function getAllFields\n\n\tgetTableRefQualifier: function(grCurrent) {\n\t\treturn 'internal_type!=collection^nameIN' + j2js(new TableUtils(grCurrent.getValue('table')).getTables()).join(',') + '^name=' + new TableUtils(grCurrent.getValue('table')).getAbsoluteBase() + '^ORelement!=sys_id^ORDERBYcolumn_label';\n\t}, // function _getTableRefQualifier\n\n\t// Clean attachments\n\tcleanAttachments: function(sSysId) {\n\t\tvar grAtt = new GlideRecord('sys_attachment');\n\t\tgrAtt.addEncodedQuery('table_name=x_snc_xinstcompare_compare^table_sys_id=' + sSysId);\n\t\tgrAtt.query();\n\t\tgrAtt.deleteMultiple();\t\n\t}, // function cleanRemoteAttachments\n\n\t// Schedule ScriptInclude Function\n\tscheduleScript: function(sScriptInclude, sFunction, iSeconds, aFunctionArgs, aClassArgs, sScheduleName) {\n\t\tfunction parseArgs(aArgs) {\n\t\t\tvar aReturn = [];\n\t\t\tif (!aArgs) {\n\t\t\t\treturn '';\n\t\t\t} // if no args\n\t\t\taArgs.forEach(function(oItem, iIndex){\n\t\t\t\tvar sType = typeof oItem;\n\t\t\t\tif ((!oItem) &amp;&amp; (sType != 'boolean')) {\n\t\t\t\t\treturn '';\n\t\t\t\t} // if empty\n\t\t\t\t//gs.info('what is it: ' + GlideJSUtil.getJavaClassName(oItem));\n\t\t\t\tif (JSUtil.instance_of(oItem, GlideRecord)) {\n\t\t\t\t\taScript.push('var grRecord_' + iIndex + \" = new GlideRecord('\" + oItem.getTableName() + \"');\");\n\t\t\t\t\taScript.push('grRecord_' + iIndex + \".get('\" + oItem.getUniqueValue() + \"');\");\n\t\t\t\t\taReturn.push('grRecord_' + iIndex);\n\t\t\t\t} else if (JSUtil.instance_of(oItem, GlideDate)) {\n\t\t\t\t\taScript.push('var dtDate_' + iIndex + \" = new GlideDate('\" + oItem + \"');\");\n\t\t\t\t\taReturn.push('dtDate_' + iIndex);\n\t\t\t\t} else if (JSUtil.instance_of(oItem, GlideTime)) {\n\t\t\t\t\taScript.push('var dtTime_' + iIndex + \" = new GlideTime('\" + oItem + \"');\");\n\t\t\t\t\taReturn.push('dtTime_' + iIndex);\n\t\t\t\t} else if (JSUtil.instance_of(oItem, GlideDateTime)) {\n\t\t\t\t\taScript.push('var dtDateTime_' + iIndex + \" = new GlideDateTime('\" + oItem + \"');\");\n\t\t\t\t\taReturn.push('dtDateTime_' + iIndex);\n\t\t\t\t} else {\n\t\t\t\t\taReturn.push(JSON.stringify(oItem));\n\t\t\t\t} // if special object\n\t\t\t}, this); // each argument\n\t\t\treturn aReturn.join(', ');\n\t\t} // function parseArgs\n\t\tiSeconds = (iSeconds) ? iSeconds : 1;\n\t\tvar sScriptName = '';\n\t\tvar bCalcScript = true;\n\t\tvar aScript = [];\n\t\tif (Array.isArray(sScriptInclude)) {\n\t\t\tsScriptName = (sFunction) ? sFunction : 'Passed Script';\n\t\t\tbCalcScript = false;\n\t\t\taScript = sScriptInclude;\n\t\t} // if is array\n\t\tif (bCalcScript) {\n\t\t\tvar sClassArgs = (aClassArgs) ? parseArgs(aClassArgs) : '';\n\t\t\tvar sFunctionArgs = (aFunctionArgs) ? parseArgs(aFunctionArgs) : '';\n\t\t\tsScriptName =  'NOWCOTools.scheduleScript - ' + sScriptInclude + '.' + sFunction;\n\t\t\taScript.push('new ' + sScriptInclude + '(' + sClassArgs + ').' + sFunction + '(' + sFunctionArgs + ');');\n\t\t} // if bCalcScript\n\t\tvar dtDelay = new GlideDateTime();\n\t\tdtDelay.addSeconds(iSeconds);\n\t\tsScheduleName = (sScheduleName) ? sScheduleName : 'NOWCOTools.ScriptScheduler - ' + sScriptName;\n\t\tvar grTrigger = new GlideRecord('sys_trigger');\n\t\tgrTrigger.newRecord();\n\t\tgrTrigger.setValue('name', sScheduleName);\n\t\tgrTrigger.setValue('trigger_type', '0');\n\t\tgrTrigger.setValue('next_action', dtDelay);\n\t\tgrTrigger.setValue('script', aScript.join('\\n'));\n\t\tgrTrigger.insert();\n\t}, // function scheduleScript\n\n\t\n\ttype: 'CrossInstanceCompareGlobal',\n\tversion: '1.0.2',\n\tauthor: 'ServiceNow Expert Services, Tom Hauri',\n\temail: 'tom.hauri@servicenow.com'\n};");&#13;
+	if (bUpdate) {&#13;
+		grScriptInclude.update();&#13;
+	} else {&#13;
+		grScriptInclude.insert();&#13;
+	} // if update&#13;
+} // function addGlobalScript&#13;
+&#13;
+&#13;
+function addGlobalMessages() {&#13;
+	var oMessage = {&#13;
+		'xinstcompare_record_right': 'Right record',&#13;
+		'xinstcompare_record_left': 'Left record'&#13;
+	}; // Messages&#13;
+	Object.keys(oMessage).forEach(function(sMessageId){&#13;
+		var bUpdate = false;&#13;
+		var grMessage = new GlideRecord('sys_ui_message');&#13;
+		grMessage.addEncodedQuery('key=' + sMessageId);&#13;
+		grMessage.query();&#13;
+		if (grMessage.next()) {&#13;
+			bUpdate = true;&#13;
+		} // if next&#13;
+		grMessage.setValue('key', sMessageId);&#13;
+		grMessage.setValue('message', oMessage[sMessageId]);&#13;
+		if (bUpdate) {&#13;
+			grMessage.update();&#13;
+		} else {&#13;
+			grMessage.insert();&#13;
+		} // if update&#13;
+	}); // each messages&#13;
+} // function addGlobalMessages</script>
+        <state>0</state>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2023-01-08 10:39:35</sys_created_on>
+        <sys_id>9da586cd1b54e9508fa442e7cc4bcb36</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-08 11:12:16</sys_updated_on>
+        <system_id/>
+        <time_zone/>
+        <trigger_class>DEFAULT</trigger_class>
+        <trigger_type>0</trigger_type>
+        <upgrade_safe>false</upgrade_safe>
+    </sys_trigger>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2023-01-08 10:55:54</sys_created_on>
+        <sys_id>6e89c6051b94e9508fa442e7cc4bcb95</sys_id>
+        <sys_mod_count>5</sys_mod_count>
+        <sys_name>x_snc_xinstcompare_install_global</sys_name>
+        <sys_package display_value="Cross Instance Compare Tool" source="x_snc_xinstcompare">782797011b67d550034520a8ec4bcb98</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Cross Instance Compare Tool">782797011b67d550034520a8ec4bcb98</sys_scope>
+        <sys_update_name>sys_metadata_link_6e89c6051b94e9508fa442e7cc4bcb95</sys_update_name>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-08 13:49:34</sys_updated_on>
+        <tablename>sys_trigger</tablename>
+    </sys_metadata_link>
+</record_update>

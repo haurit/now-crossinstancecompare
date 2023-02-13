@@ -1,0 +1,598 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_snc_xinstcompare.CompareAJAX</api_name>
+        <caller_access/>
+        <client_callable>true</client_callable>
+        <description>Cross Instance Compare&#13;
+ServiceNow Customer Outcomes, Tom Hauri</description>
+        <name>CompareAJAX</name>
+        <script><![CDATA[var CompareAJAX = Class.create();
+CompareAJAX.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+
+	/* IDEA LOG:
+	- extended table count --> e.g. select task, get count for all subtables like incident/change via group_by_field
+	- compare instance setup specifically, e.g. number of nodes, memory, other settings
+	- use GlideScriptedHierarchicalWorker to run stuff in background while showing progress worker
+	*/
+	
+	_setDefaults: function() {
+		this.bLog = false;
+		this.bShowCompareCharCodeInLog = true;
+		this.iRemoteRecordsChunkSize = 1000;
+		this.iMaxTablesForCount = 500;
+	}, // function _setDefaults
+
+	// Compare function 
+	// Called from UI Action: Compare
+	compare: function() {
+		this._setDefaults();
+		this.oParams = {};
+		['sys_id', 'number', 'table', 'type', 'query', 'mode', 'output', 'remote_selector', 'remote_keys', 'remote_fields', 'record_left', 'record_right', 'remote_connection'].forEach(function(sParam) {this.oParams[sParam] = this.getParameter('sysparm_' + sParam);}, this);
+		if (this.bLog) {gs.info('CompareAJAX.compare start with ' + JSON.stringify(this.oParams));}
+		this.oResp = {'__status': 'success', 'type': this.oParams['type'], 'output': this.oParams['output'], 'valid': true, 'html': '', 'url': '', 'msg': '', 'title': '', 'refresh': false};
+		if ((this.oParams) && (this.oParams.hasOwnProperty('sys_id'))) {
+			new global.CrossInstanceCompareGlobal().cleanAttachments(this.oParams['sys_id']);
+			if (this.oParams['type'] == 'local') {
+				this._compareLocal();
+			} else if (this.oParams['type'] == 'remote_one') {
+				this._compareRemoteOne();
+			} else if (this.oParams['type'] == 'remote_list') {
+				this._compareRemoteList();
+			} else if (this.oParams['type'] == 'remote_count') {
+				var sQuery = (this.oParams['query']) ? this.oParams['query'] : '';
+				var _CompareGlobal = new global.CrossInstanceCompareGlobal();
+				var iLocalTables = Number(_CompareGlobal.countRecords('sys_db_object', sQuery, '', false, true));
+				var bOutputCSV = (this.oParams['output'] == 'attach_csv') ? true : false;
+				if (iLocalTables > this.iMaxTablesForCount) {
+					if (bOutputCSV) {
+						var aParamValues = [];
+						Object.keys(this.oParams).forEach(function(sParam){
+							if (this.oParams[sParam]) {
+								aParamValues.push(this.oParams[sParam]);
+							} else {
+								aParamValues.push('null');
+							} // if param
+						}, this); // each param
+						new global.CrossInstanceCompareGlobal().scheduleScript('x_snc_xinstcompare.CompareAJAX', '_scheduledRemoteCount', 1, aParamValues, [], 'xcomp_remote_count_csv');
+						this.oResp.valid = false;
+						this.oResp.msg = gs.getMessage('xinstcompare_info_count_tables', [String(this.iMaxTablesForCount), String(iLocalTables)]);
+						this.oResp.refresh = true;
+						var grCompare = new GlideRecord('x_snc_xinstcompare_compare');
+						if (grCompare.get(this.oParams['sys_id'])) {
+							grCompare.setValue('status', 'running');
+							grCompare.update();
+						} // if compare
+					} else {
+						this.oResp.valid = false;
+						this.oResp.msg = gs.getMessage('xinstcompare_error_count_tables', [String(this.iMaxTablesForCount), String(iLocalTables)]);
+					} // if too many tables
+				} else {
+					this._compareRemoteCount();
+				} // if local table big and output csv
+			} // if type
+			if (this.bLog) {gs.info('CompareAJAX.compare returns: ' + JSON.stringify(this.oResp));}
+		} else {
+			this.oResp.valid = false;
+			this.oResp.msg = gs.getMessage('xinstcompare_error_param');
+		} // error parsing parameters
+		return JSON.stringify(this.oResp);
+	}, // function compare
+
+	_compareLocal: function() {
+		this.oResp.title = gs.getMessage('xinstcompare_title_local');
+		var grLeft = new GlideRecord(this.oParams['table']);
+		var grRight = new GlideRecord(this.oParams['table']);
+		if ((!grLeft.get(this.oParams['record_left'])) || (!grLeft.isValidRecord())) {
+			this.oResp.valid = false;
+			this.oResp.msg = gs.getMessage('xinstcompare_error_record_left');
+		} else if ((!grRight.get(this.oParams['record_right'])) || (!grRight.isValidRecord())) {
+			this.oResp.valid = false;
+			this.oResp.msg = gs.getMessage('xinstcompare_error_record_right');
+		} else {
+			new global.CrossInstanceCompareGlobal().compareRecords(grLeft, grRight, '', this.oResp);
+		} // if valid records
+	}, // function _compareLocal
+
+	_compareRemoteOne: function() {
+		this.oResp.title = gs.getMessage('xinstcompare_title_remote_one');
+		var grLeft = new GlideRecord(this.oParams['table']);
+		var grRight = new GlideRecord(this.oParams['table']);
+		if ((!grLeft.get(this.oParams['record_left'])) || (!grLeft.isValidRecord())) {
+			this.oResp.valid = false;
+			this.oResp.msg = gs.getMessage('xinstcompare_error_record_left');
+		} else {
+			var sQuery = '';
+			if (this.oParams['remote_selector'] == 'sysid') {
+				sQuery = 'sys_id=' + grLeft.getUniqueValue();
+			} else if (this.oParams['remote_selector'] == 'field') {
+				var aRemoteKeys = String(this.oParams['remote_keys']).split(',');
+				if (aRemoteKeys.length > 0) {
+					var aQueryTmp = this._parseFields(aRemoteKeys, grLeft);
+					sQuery = aQueryTmp.join('^');
+				} // if remote keys
+			} else if (this.oParams['remote_selector'] == 'query') {
+				sQuery = this.oParams['query'];
+			} // if remote selector
+			this._getRemoteRecord(sQuery);
+			if ((this.oResp.valid) && (this.oResponseBody.hasOwnProperty('result'))) {
+				new global.CrossInstanceCompareGlobal().compareRecords(grLeft, grRight, this.oResponseBody['result'], this.oResp);
+			} // if valid respone
+		} // if left
+	}, // function _compareRemoteOne
+
+	_compareRemoteList: function() {
+		this.oResp.title = gs.getMessage('xinstcompare_title_remote_list');
+		var aKeys = (this.oParams['remote_keys']) ? this._parseFields(this.oParams['remote_keys']) : ['sys_id'];
+		var aFields = (this.oParams['remote_fields']) ? this._parseFields(this.oParams['remote_fields']) : new global.CrossInstanceCompareGlobal().getAllFields(this.oParams['table']);
+		var sQuery = (this.oParams['query']) ? this.oParams['query'] + '^ORDERBY' + aFields[0] : 'ORDERBY' + aFields[0];
+		this._getRemoteRecords(sQuery, aFields);
+		if ((this.oResp.valid) && (this.oResponseBody.hasOwnProperty('result')) && (Array.isArray(this.oResponseBody['result']))) {
+			var _getInternalType = new global.CrossInstanceCompareGlobal().getInternalType;
+			var grRight = new GlideRecord(this.oParams['table']);
+			var aMatchedRecords = [];
+			var sReturn = '', sReturnTmp = '', sKeyValue = '', sLocalValue = '', sRemoteValue = '', sLocalDisplayValue = '', sRemoteDisplayValue = '', sInternalType = '', sStatus = '';
+			if (this.oParams['output'] == 'screen') {
+				sReturn = '<body><table cellpadding="0" cellspacing="0" width="100%" class="diff"><thead><tr><th width="10%" class="texttitle">' + gs.getMessage('xinstcompare_status') + '</th>';
+			} else {
+				sReturn = gs.getMessage('xinstcompare_status') + ';';
+			} // if output
+			aFields.forEach(function(sField){
+				if (this.oParams['output'] == 'screen') {
+					sReturn += '<th class="texttitle">' + grRight.getElement(sField).getLabel() + '</th>';
+				} else {
+					sReturn += grRight.getElement(sField).getLabel() + ';';
+				} // if output
+			}, this); // each field
+			if (this.oParams['output'] == 'screen') {
+				sReturn += '</tr></thead><tbody>';
+			} else {
+				sReturn += '\n';
+			} // if output
+			this.oResponseBody['result'].forEach(function(oLine) {
+				sStatus = 'same';
+				sReturnTmp = '';
+				if (this.oParams['output'] == 'screen') {
+					sReturn += '<tr>';
+				} // if output
+				aQueryTmp = [];
+				aKeys.forEach(function(sKey){
+					if ((typeof oLine[sKey] == 'object') && (oLine[sKey].hasOwnProperty('value'))) {
+						sKeyValue = oLine[sKey]['value'];
+					} else {
+						sKeyValue = oLine[sKey];
+					} // if obj
+					aQueryTmp.push(sKey + '=' + sKeyValue);
+				}); // each key
+				grRight = new GlideRecord(this.oParams['table']);
+				grRight.addEncodedQuery(aQueryTmp.join('^'));
+				grRight._query();
+				if (grRight._next()) {
+					aMatchedRecords.push(grRight.getUniqueValue());
+				} else {
+					sStatus = 'remote';
+				} // if matched
+				aFields.forEach(function(sField){
+					sInternalType = _getInternalType(grRight, sField);
+					sRemoteValue = '';
+					sRemoteDisplayValue = '';
+					sLocalValue = this._nullsub(grRight.getValue(sField));
+					sLocalDisplayValue = '';
+					if ((typeof oLine[sField] == 'object') && (oLine[sField].hasOwnProperty('value'))) {
+						sRemoteValue = oLine[sField]['value'];
+						sRemoteDisplayValue = oLine[sField]['display_value'];
+						sRemoteDisplayValue = ((sRemoteDisplayValue) && (sRemoteDisplayValue != sRemoteValue)) ? ' (' + sRemoteDisplayValue + ')' : '';
+						sLocalDisplayValue = this._nullsub(grRight[sField].getDisplayValue());
+						sLocalDisplayValue = ((sLocalDisplayValue) && (sLocalDisplayValue != sLocalValue))  ? ' (' + sLocalDisplayValue + ')' : '';
+					} // if return is object
+					if (sInternalType == 'boolean') {
+						if (sLocalValue == '1' || sLocalValue == true || sLocalValue == 'true') {
+							sLocalValue = 'true';
+						} else {
+							sLocalValue = 'false';
+						} // if is 1 or true
+					} // if boolean
+					sLocalValue = sLocalValue.replace(/\r/gm, ''); // remove cr (13)
+					sRemoteValue = sRemoteValue.replace(/\r/gm, ''); // remove cr (13)
+					if (this.bShowCompareCharCodeInLog) {gs.info('CompareAJAX._compareRemoteList char compare local: ' + this._convertStringToCode(sLocalValue) + ' remote: ' + this._convertStringToCode(sRemoteValue));}
+					if ((grRight.isValidRecord()) && (sLocalValue == sRemoteValue)) {
+						if (this.oParams['output'] == 'screen') {
+							sReturnTmp += '<td style="width:auto;" class="equals">' + sRemoteValue + sRemoteDisplayValue + '</td>';
+						} else {
+							sReturnTmp += this._parseCSV(sRemoteValue + sRemoteDisplayValue);
+						} // if output
+					} else if (grRight.isValidRecord()) {
+						sStatus = 'diff';
+						if (this.oParams['output'] == 'screen') {
+							sReturnTmp += '<td style="width:auto;" class="empty"><div style="color:darkgreen;"><b>' + sLocalValue + sLocalDisplayValue + '</b></div><div style="color:darkred;"><b>' + sRemoteValue + sRemoteDisplayValue + '</b></div></td>';
+						} else {
+							sReturnTmp += this._parseCSV(sLocalValue + sLocalDisplayValue + '\n\n<-- ' + gs.getMessage('xinstcompare_local_value') + ' | ' + gs.getMessage('xinstcompare_remote_value') + ' -->\n\n' + sRemoteValue + sRemoteDisplayValue);
+						} // if output
+					} else {
+						if (this.oParams['output'] == 'screen') {
+							sReturnTmp += '<td style="width:auto;" class="delete">' + sRemoteValue + sRemoteDisplayValue + '</td>';
+						} else {
+							sReturnTmp += this._parseCSV(sRemoteValue + sRemoteDisplayValue);
+						} // if output
+					} // if value
+				}, this); // compare each field
+				if ((this.oParams['mode'] == 'all') || (this.oParams['mode'] == sStatus) || ((this.oParams['mode'] == 'diffonly') && (sStatus == 'diff')) || ((this.oParams['mode'] == 'diff') && (sStatus == 'remote'))) {
+					if (this.oParams['output'] == 'screen') {
+						sReturn += '<td style="width:auto;" class="fields">' + gs.getMessage('xinstcompare_' + sStatus) + '</td>' + sReturnTmp + '</tr>';
+					} else {
+						sReturn += gs.getMessage('xinstcompare_' + sStatus) + ';' + sReturnTmp + '\n';
+					} // if output
+				} // if show status
+			}, this); // each line
+			sReturnTmp = '';
+			var _fnAddField = function(sField) {
+				sInternalType = _getInternalType(grRight, sField);
+				sLocalValue = this._nullsub(grRight.getValue(sField));
+				if (sInternalType == 'boolean') {
+					sLocalValue = (sLocalValue == '1') ? 'true' : 'false';
+				} else {
+					sLocalDisplayValue = this._nullsub(grRight[sField].getDisplayValue());
+					sLocalDisplayValue = ((sLocalDisplayValue) && (sLocalDisplayValue != sLocalValue))  ? ' (' + sLocalDisplayValue + ')' : '';
+				} // if bool
+				if (this.oParams['output'] == 'screen') {
+					sReturnTmp += '<td style="width:auto;" class="insert">' + sLocalValue + sLocalDisplayValue + '</td>';
+				} else {
+					sReturnTmp += this._parseCSV(sLocalValue + sLocalDisplayValue);
+				} // if output
+			}; // function _fnAddField
+			sStatus = 'local';
+			grRight = new GlideRecord(this.oParams['table']);
+			grRight.addEncodedQuery(this.oParams['query'] + '^sys_idNOT IN' + aMatchedRecords.join(','));
+			grRight.orderBy(aFields[0]);
+			grRight.query();
+			while (grRight.next()) {
+				sReturnTmp = '';
+				aFields.forEach(_fnAddField, this); // compare each field
+				if ((this.oParams['mode'] == 'all') || (this.oParams['mode'] == sStatus) || ((this.oParams['mode'] == 'diff') && (sStatus == 'local'))) {
+					if (this.oParams['output'] == 'screen') {
+						sReturn += '<tr><td style="width:auto;" class="fields">' + gs.getMessage('xinstcompare_' + sStatus) + '</td>' + sReturnTmp + '</tr>';
+					} else {
+						sReturn += gs.getMessage('xinstcompare_' + sStatus) + ';' + sReturnTmp + '\n';
+					} // if output
+				} // if show status
+			} // all not already matched items
+			if (this.oParams['output'] == 'screen') {
+				sReturn += '</tbody></table></body>';
+				this.oResp.html = sReturn;
+			} // if output
+			if ((this.oParams['output'] == 'attach_csv') && (this.oParams['sys_id'])) {
+				var grCompare = new GlideRecord('x_snc_xinstcompare_compare');
+				if (grCompare.get(this.oParams['sys_id'])) {
+					var grAttachment = new GlideSysAttachment();
+					grAttachment.write(grCompare, 'compare_' + this.oParams['number'] + '_' + this.oParams['table'] + '.csv', 'application/csv', sReturn);
+				} // if compare
+			} // if sys id
+		} // if valid respone
+	}, // function _compareRemoteList
+
+	_scheduledRemoteCount: function() {
+		this._setDefaults();
+		this.oParams = {};
+		var aParams = ['sys_id', 'number', 'table', 'type', 'query', 'mode', 'output', 'remote_selector', 'remote_keys', 'remote_fields', 'record_left', 'record_right', 'remote_connection'];
+		for (var i = 0; i < arguments.length; i++) {
+			this.oParams[aParams[i]] = arguments[i];
+		} // each argument
+		if (this.bLog) {gs.info('CompareAJAX._scheduledRemoteCount start with oParams: ' + JSON.stringify(this.oParams));}
+		this.oResp = {'__status': 'success', 'type': this.oParams['type'], 'output': this.oParams['output'], 'valid': true, 'html': '', 'url': '', 'msg': '', 'title': ''};
+		this._compareRemoteCount();
+	}, // function _scheduledRemoteCount
+
+	_compareRemoteCount: function() {
+		this.oResp.title = gs.getMessage('xinstcompare_title_remote_count');
+		//var sGroupByField = '';
+		var _CompareGlobal = new global.CrossInstanceCompareGlobal();
+		//var aGroupByField = (this.oParams['remote_keys']) ? this._parseFields(this.oParams['remote_keys']) : [];
+		//if ((aGroupByField) && (aGroupByField.length > 0)) {
+		//	sGroupByField = aGroupByField[0];
+		//} // if group by field
+		var sQuery = (this.oParams['query']) ? this.oParams['query'] : '';
+		var oTables = {}, sTableName = '';
+		var grLocalTables = new GlideRecord('sys_db_object');
+		if (sQuery) {
+			grLocalTables.addEncodedQuery(sQuery);
+		} // if query
+		grLocalTables.query();
+		while (grLocalTables.next()) {
+			sTableName = grLocalTables.getValue('name');
+			oTables[sTableName] = {'label': grLocalTables.getValue('label')};
+			//oTables[sTableName]['local'] = _countRecords(grLocalTables.getValue('name'), '', sGroupByField, false, true);
+			oTables[sTableName]['local'] = Number(_CompareGlobal.countRecords(grLocalTables.getValue('name'), '', '', false, true));
+		} // while local tables
+		this._getRemoteRecords(sQuery, ['name', 'label']);
+		if ((this.oResp.valid) && (this.oResponseBody.hasOwnProperty('result')) && (Array.isArray(this.oResponseBody['result']))) {
+			this.oResponseBody['result'].forEach(function(oLine) {
+				sTableName = oLine['name']['value'];
+				if (!oTables.hasOwnProperty(sTableName)) {
+					oTables[sTableName] = {'label': oLine['label']['value']};
+				} // if not table
+				//oTables[sTableName]['remote'] = this._countRemoteRecords(sTableName, '', sGroupByField, true);
+				oTables[sTableName]['remote'] = this._countRemoteRecords(sTableName, '', '', true);
+			}, this); // each remote table
+		} // if valid respone
+		var sReturn = '', sTableLabel = '', iLocalCount = '', iRemoteCount = '';
+		if (this.oParams['output'] == 'screen') {
+			sReturn = '<body><table cellpadding="0" cellspacing="0" width="100%" class="diff"><thead><tr><th width="10%" class="texttitle">' + gs.getMessage('Table name') + '</th>';
+			sReturn += '<th class="texttitle">' + gs.getMessage('xinstcompare_count_local') + '</th>';
+			sReturn += '<th class="texttitle">' + gs.getMessage('xinstcompare_count_remote') + '</th>';
+		} else {
+			sReturn = gs.getMessage('Table name') + ';' + gs.getMessage('xinstcompare_count_local') + ';' + gs.getMessage('xinstcompare_count_remote');
+		} // if output
+		if (this.oParams['output'] == 'screen') {
+			sReturn += '</tr></thead><tbody>';
+		} else {
+			sReturn += '\n';
+		} // if output
+		Object.keys(oTables).forEach(function(sTableName) {
+			sTableLabel = (oTables[sTableName].hasOwnProperty('label')) ? oTables[sTableName]['label'] + ' [' + sTableName + ']' : sTableName;
+			iLocalCount = (oTables[sTableName].hasOwnProperty('local')) ? oTables[sTableName]['local'] : -1;
+			iRemoteCount = (oTables[sTableName].hasOwnProperty('remote')) ? oTables[sTableName]['remote'] : -1;
+			if (this.oParams['output'] == 'screen') {
+				if ((iLocalCount != -1) && (iRemoteCount != -1)) {
+					if ((this.oParams['mode'] != 'local') && (this.oParams['mode'] != 'remote')) {
+						if ((iLocalCount == -99) && (iRemoteCount == -99)) {
+							sReturn += '<tr><td style="width:auto;" class="fields">' + sTableLabel + '</td><td style="width:auto;" class="equals">' + gs.getMessage('error') + '</td><td style="width:auto;" class="equals">' + gs.getMessage('error') + '</td></tr>';
+						} else if (iRemoteCount == -99) {
+							sReturn += '<tr><td style="width:auto;" class="fields">' + sTableLabel + '</td><td style="width:auto;" class="equals">' + String(iLocalCount) + '</td><td style="width:auto;" class="equals">' + gs.getMessage('error') + '</td></tr>';
+						} else if (iLocalCount == -99) {
+							sReturn += '<tr><td style="width:auto;" class="fields">' + sTableLabel + '</td><td style="width:auto;" class="equals">' + gs.getMessage('error') + '</td><td style="width:auto;" class="equals">' +String(iRemoteCount) + '</td></tr>';
+						} else if (iLocalCount > iRemoteCount) {
+							sReturn += '<tr><td style="width:auto;" class="fields">' + sTableLabel + '</td><td style="width:auto;" class="equals"><div style="color:darkred;"><b>' + String(iLocalCount) + '</b><div></td><td style="width:auto;" class="equals">' + String(iRemoteCount) + '</td></tr>';
+						} else if (iLocalCount < iRemoteCount) {
+							sReturn += '<tr><td style="width:auto;" class="fields">' + sTableLabel + '</td><td style="width:auto;" class="equals">' + String(iLocalCount) + '</td><td style="width:auto;" class="equals"><div style="color:darkred;"><b>' + String(iRemoteCount) + '</b><div></td></tr>';
+						} else if (this.oParams['mode'] == 'all') {
+							sReturn += '<tr><td style="width:auto;" class="fields">' + sTableLabel + '</td><td style="width:auto;" class="equals">' + String(iLocalCount) + '</td><td style="width:auto;" class="equals">' + String(iRemoteCount) + '</td></tr>';
+						} // if count
+					} // if mode is not local or remote
+				} else if (iLocalCount != -1) {
+					if ((this.oParams['mode'] != 'remote') && (this.oParams['mode'] != 'diffonly')) {
+						if (iLocalCount == -99) {
+							sReturn += '<tr><td style="width:auto;" class="fields">' + sTableLabel + '</td><td style="width:auto;" class="insert">' + gs.getMessage('error') + '</td><td style="width:auto;" class="equals"></td></tr>';
+						} else {
+							sReturn += '<tr><td style="width:auto;" class="fields">' + sTableLabel + '</td><td style="width:auto;" class="insert">' + String(iLocalCount) + '</td><td style="width:auto;" class="equals"></td></tr>';
+						} // if not error
+					} // if remote and diff only
+				} else if (iRemoteCount != -1) {
+					if ((this.oParams['mode'] != 'local') && (this.oParams['mode'] != 'diffonly')) {
+						if (iRemoteCount == -99) {
+							sReturn += '<tr><td style="width:auto;" class="fields">' + sTableLabel + '</td><td style="width:auto;" class="equals"></td><td style="width:auto;" class="delete">' + gs.getMessage('error') + '</td></tr>';
+						} else {
+							sReturn += '<tr><td style="width:auto;" class="fields">' + sTableLabel + '</td><td style="width:auto;" class="equals"></td><td style="width:auto;" class="delete">' + String(iRemoteCount) + '</td></tr>';
+						} // if not error
+					} // if local and diff only
+				} // if both counts
+			} else {
+				if ((iLocalCount != -1) && (iRemoteCount != -1)) {
+					if ((this.oParams['mode'] != 'local') && (this.oParams['mode'] != 'remote')) {
+						sReturn += sTableLabel + ';' + String(iLocalCount) + ';' + String(iRemoteCount) + '\n';
+					} // if mode is not local or remote
+				} else if (iLocalCount != -1) {
+					if ((this.oParams['mode'] != 'remote') && (this.oParams['mode'] != 'diffonly')) {
+						sReturn += sTableLabel + ';' + String(iLocalCount) + ';' + String(iRemoteCount) + '\n';
+					} // if remote and diff only
+				} else if (iRemoteCount != -1) {
+					if ((this.oParams['mode'] != 'local') && (this.oParams['mode'] != 'diffonly')) {
+						sReturn += sTableLabel + ';' + String(iLocalCount) + ';' + String(iRemoteCount) + '\n';
+					} // if local and diff only
+				} // if both counts
+			} // if output
+		}, this); // each table
+		if (this.oParams['output'] == 'screen') {
+			sReturn += '</tbody></table></body>';
+			this.oResp.html = sReturn;
+		} // if output
+		if ((this.oParams['output'] == 'attach_csv') && (this.oParams['sys_id'])) {
+			var grCompare = new GlideRecord('x_snc_xinstcompare_compare');
+			if (grCompare.get(this.oParams['sys_id'])) {
+				var grAttachment = new GlideSysAttachment();
+				grAttachment.write(grCompare, 'compare_' + this.oParams['number'] + '_count.csv', 'application/csv', sReturn);
+				if (grCompare.getValue('status') == 'running') {
+					grCompare.setValue('status', 'complete');
+					grCompare.update();
+				} // if running
+			} // if compare
+		} // if sys id
+	}, // function _compareRemoteCount
+
+	_convertStringToCode: function(sString) {
+		var aResult = [];
+		for (i=0;i < sString.length;i++) {
+			aResult.push(sString.charCodeAt(i));
+		} // each char
+		return aResult.join(',');
+	}, // function _convertStringToCode
+
+	_parseFields: function(aFieldIds, grRecord, oLine) {
+		aFieldIds = (Array.isArray(aFieldIds)) ? aFieldIds : aFieldIds.split(',');
+		var aReturn = [];
+		var grDict = new GlideRecord('sys_dictionary');
+		aFieldIds.forEach(function(sFieldId) {
+			if (grDict.get(sFieldId)) {
+				if ((grRecord) && (grRecord.isValidRecord())) {
+					aReturn.push(grDict.getValue('element') + '=' + grRecord.getValue(grDict.getValue('element')));
+				} else if (oLine) {
+					aReturn.push(grDict.getValue('element') + '=' + oLine[grDict.getValue('element')]);
+				} else {
+					aReturn.push(grDict.getValue('element'));
+				} // if rec, line
+			} // if key
+		}, this); // each key
+		return aReturn;
+	}, // function _parseFields
+
+	_nullsub: function(sValue, sReplace) {
+		if ((!sValue) || (String(sValue) == 'null') || (String(sValue) == 'unknown')) {
+			sValue = (sReplace) ? sReplace : '';
+		} // if empty
+		return sValue;
+	}, // function _nullsub
+
+	_parseCSV: function(sValue) {
+		if ((!sValue) || (String(sValue) == 'null') || (String(sValue) == 'unknown')) {
+			sValue = '';
+		} // if empty
+		sValue = String(sValue).replace(/\n|\r|/g, ''); // replace newline
+		sValue = String(sValue).replace(/"/g, '""'); // replace quotes
+		sValue = String(sValue).replace(/;/g, ''); // replace semicolon
+		return '"' + sValue + '";';
+	}, // function _parseCSV
+
+	_getRemoteRecord: function(sQuery) {
+		var grConnAndCredAlias = new GlideRecord('sys_alias');
+		if (grConnAndCredAlias.get(this.oParams['remote_connection'])) {
+			var oInput = {'connection_alias': grConnAndCredAlias, 'table': this.oParams['table'], 'limit': '1', 'query': sQuery, 'offset': '0', 'save_attachment': false};			
+			this.oResponseBody = this._callFlowAPI('x_snc_xinstcompare.comparelocal', oInput);
+		} else {
+			this.oResp.valid = false;
+			this.oResp.msg = gs.getMessage('xinstcompare_error_creds');
+		} // if conn and cred alias and compare
+	}, // function _getRemoteRecord
+
+	_getRemoteRecords: function(sQuery, aFields) {
+		var grConnAndCredAlias = new GlideRecord('sys_alias');
+		if (grConnAndCredAlias.get(this.oParams['remote_connection'])) {
+			var oInput = {'connection_alias': grConnAndCredAlias, 'table': this.oParams['table'], 'limit': '1000', 'query': sQuery, 'offset': '0', 'save_attachment': false};
+			if ((aFields) && (Array.isArray(aFields)) && (aFields.length > 0) && (aFields.length < 16)) {
+				oInput['fields'] = aFields.join(',');
+			} // if fields are defined and less then 16 fields to avoid issue with URL length KB0829648 
+			var iRemoteCount = this._countRemoteRecords(this.oParams['table'], sQuery);
+			if (iRemoteCount < this.iRemoteRecordsChunkSize) {
+				this.oResponseBody = this._callFlowAPI('x_snc_xinstcompare.comparelocal', oInput);
+			} else {
+				var grCompareRecord = new GlideRecord('x_snc_xinstcompare_compare');
+				if (grCompareRecord.get(this.oParams['sys_id'])) {
+					oInput['compare_record'] = grCompareRecord;
+					oInput['save_attachment'] = true;
+					var iOffset = 0;
+					var iChunks = Math.ceil(iRemoteCount / this.iRemoteRecordsChunkSize);
+					for (var i = 0; i < iChunks; i++) {
+						oInput['offset'] = String(iOffset);
+						this._callFlowAPI('x_snc_xinstcompare.comparelocal', oInput);
+						iOffset += this.iRemoteRecordsChunkSize;
+					} // each chunk
+					var gsAttachment = new GlideSysAttachment();
+					var grAttachment = new GlideRecord('sys_attachment');
+					grAttachment.addEncodedQuery('table_name=x_snc_xinstcompare_compare^table_sys_id=' + this.oParams['sys_id'] + '^file_nameSTARTSWITHremote_record_');
+					grAttachment.query();
+					var iAttachments = grAttachment.getRowCount();
+					if (iAttachments == iChunks) {
+						this.oResponseBody = {'result': []};
+						var aLines = [];
+						while (grAttachment.next()) {
+							var gsContentStream = gsAttachment.getContentStream(grAttachment.getUniqueValue());
+							var gTextReader = new GlideTextReader(gsContentStream);
+							var oLine = ' ';
+							while((oLine = gTextReader.readLine()) != null) {
+								aLines.push(oLine);
+							} // while lines
+						} // each attachment
+						var sResposeBody = aLines.join('\n');
+						sResposeBody = sResposeBody.replace(/\]\}\n\{"result":\[/gi, ', ');
+						try {
+							this.oResponseBody = JSON.parse(sResposeBody);
+						} catch(ex) {
+							this.oResp.valid = false;
+							this.oResp.msg = gs.getMessage('xinstcompare_error_parsechunks', [String(ex)]);
+							gs.error('CompareAJAX._getRemoteRecords Error parsing JSON: ' + String(ex));
+						} // try remote call
+					} else {
+						this.oResp.valid = false;
+						this.oResp.msg = gs.getMessage('xinstcompare_error_chunks', [iAttachments, iChunks]);
+					} // if chunks match files
+					if (iAttachments > 0) {
+						new global.CrossInstanceCompareGlobal().cleanAttachments(this.oParams['sys_id']);
+					} // if attachments
+				} // if compare record
+			} // if status	
+		} // if conn and cred alias and compare
+	}, // function _getRemoteRecords
+
+	_countRemoteRecords: function(sTableName, sQuery, sGroupByField, bContinueOnError) {
+		var grConnAndCredAlias = new GlideRecord('sys_alias');
+		if (grConnAndCredAlias.get(this.oParams['remote_connection'])) {
+			var oInput = {'connection_alias': grConnAndCredAlias, 'table': sTableName, 'query': sQuery};
+			if (sGroupByField) {
+				oInput['groupbyfield'] = sGroupByField;
+			} // if group by field
+			var oResponseBody = this._callFlowAPI('x_snc_xinstcompare.countremote', oInput, bContinueOnError);
+			if ((oResponseBody) && (oResponseBody.hasOwnProperty('result')) && (!Array.isArray(oResponseBody['result'])) && (oResponseBody['result'].hasOwnProperty('stats')) && (oResponseBody['result']['stats'].hasOwnProperty('count'))) {
+				var sResult = oResponseBody['result']['stats']['count'];
+				if ((sResult) && (isNaN(sResult) === false)) {
+					return Number(sResult);
+				} // if result is number
+			} else if ((oResponseBody) && (oResponseBody.hasOwnProperty('result')) && (Array.isArray(oResponseBody['result']))) {
+				var oResult = {};
+				oResponseBody['result'].forEach(function(oRESTResult) {
+					if ((oRESTResult) && (oRESTResult.hasOwnProperty('stats')) && (oRESTResult['stats'].hasOwnProperty('count')) && (oRESTResult.hasOwnProperty('groupby_fields')) && (oRESTResult['groupby_fields'][0].hasOwnProperty('value'))) {
+						var sResult = oRESTResult['stats']['count'];
+						var sValue = oRESTResult['groupby_fields'][0]['value'];
+						if ((sResult) && (sValue) && (isNaN(sResult) === false)) {
+							oResult[sValue] = Number(sResult);
+						} // if result is number
+					} // if rest result has properties
+				}, this); // each result
+				return oResult;
+			} else {
+				return -99;
+			} // if result
+		} else {
+			this.oResp.valid = false;
+			this.oResp.msg = gs.getMessage('xinstcompare_error_creds');
+		} // if conn and cred alias and compare
+	}, // function _countRemoteRecords
+
+	_callFlowAPI: function(sAction, oInput, bContinueOnError) {
+		var oResponseBody = {};
+		bContinueOnError = (bContinueOnError === true) ? true : false;
+		try {
+			var oResult = sn_fd.FlowAPI.getRunner().action(sAction).quick().inForeground().withInputs(oInput).run();
+			var oResponse = oResult.getOutputs();
+			var sResponseStatus = String(oResponse['response_status']);
+			var sErrorCode = oResponse['error_code'];
+			var sErrorMessage = oResponse['error_message'];
+			if (sResponseStatus.startsWith('20')) {
+				if ((oResponse) && (oResponse.hasOwnProperty('response_body')) && (oResponse['response_body'].indexOf('result') != -1)) {
+					oResponseBody = (oResponse) ? JSON.parse(oResponse['response_body']) : {};
+				} // if response and response body and result
+			} else if (bContinueOnError) {
+				return;
+			} else {
+				this.oResp.valid = false;
+				this.oResp.msg = gs.getMessage('xinstcompare_error_remote', [sErrorMessage]);
+			} // if status or not continue on error
+		} catch(ex) {
+			if (bContinueOnError) {
+				return;
+			} else {
+				this.oResp.valid = false;
+				this.oResp.msg = gs.getMessage('xinstcompare_error_remote', [String(ex)]);
+				gs.error('CompareAJAX.callFlowAPI sAction: ' + sAction + ' oInput: ' + JSON.stringify(oInput) + ' Error: ' + String(ex));
+			} // if not continue on error
+		} // try remote call
+		return oResponseBody;
+	}, // function _callFlowAPI
+
+	type: 'CompareAJAX',
+	version: '1.0.2',
+	author: 'ServiceNow Expert Services, Tom Hauri',
+	email: 'tom.hauri@servicenow.com'
+});]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2022-12-02 13:27:42</sys_created_on>
+        <sys_id>a228c05d1b2bd550034520a8ec4bcb11</sys_id>
+        <sys_mod_count>229</sys_mod_count>
+        <sys_name>CompareAJAX</sys_name>
+        <sys_package display_value="Cross Instance Compare Tool" source="x_snc_xinstcompare">782797011b67d550034520a8ec4bcb98</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Cross Instance Compare Tool">782797011b67d550034520a8ec4bcb98</sys_scope>
+        <sys_update_name>sys_script_include_a228c05d1b2bd550034520a8ec4bcb11</sys_update_name>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-08 07:35:32</sys_updated_on>
+    </sys_script_include>
+</record_update>

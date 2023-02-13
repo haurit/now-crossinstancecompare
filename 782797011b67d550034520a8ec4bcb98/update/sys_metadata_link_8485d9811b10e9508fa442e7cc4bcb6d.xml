@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>04eec9091bdca9508fa442e7cc4bcb59</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="x_snc_xinstcompare_compare">
+    <x_snc_xinstcompare_compare action="INSERT_OR_UPDATE">
+        <mode>diff</mode>
+        <number>COMPDEMO002</number>
+        <output>screen</output>
+        <query/>
+        <record_left>bb1996e80a0a0b0f00499e4a748ddfb7</record_left>
+        <record_right/>
+        <remote_connection display_value="x_snc_xinstcompare.XInstanceCompare_RemoteInstance">4e8ab3491be7d550034520a8ec4bcb5c</remote_connection>
+        <remote_fields/>
+        <remote_keys/>
+        <remote_selector>sysid</remote_selector>
+        <status>complete</status>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2023-01-08 06:40:10</sys_created_on>
+        <sys_id>04eec9091bdca9508fa442e7cc4bcb59</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-08 07:06:27</sys_updated_on>
+        <table>sys_script_include</table>
+        <type>remote_one</type>
+    </x_snc_xinstcompare_compare>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2023-01-08 07:08:32</sys_created_on>
+        <sys_id>8485d9811b10e9508fa442e7cc4bcb6d</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>COMPDEMO002</sys_name>
+        <sys_package display_value="Cross Instance Compare Tool" source="x_snc_xinstcompare">782797011b67d550034520a8ec4bcb98</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Cross Instance Compare Tool">782797011b67d550034520a8ec4bcb98</sys_scope>
+        <sys_update_name>sys_metadata_link_8485d9811b10e9508fa442e7cc4bcb6d</sys_update_name>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-08 07:08:32</sys_updated_on>
+        <tablename>x_snc_xinstcompare_compare</tablename>
+    </sys_metadata_link>
+</record_update>

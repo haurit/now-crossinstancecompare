@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_message">
+    <sys_ui_message action="INSERT_OR_UPDATE">
+        <application/>
+        <code/>
+        <commented_message/>
+        <key>xinstcompare_error_count_tables</key>
+        <language>en</language>
+        <message>Record count on too many tables will timeout (currently selected {1} tables, limit is set to {0} tables). Please output to CSV instead.</message>
+        <sys_class_name>sys_ui_message</sys_class_name>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2023-01-07 10:48:16</sys_created_on>
+        <sys_id>26ccf0f81b1ca550034520a8ec4bcba1</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>xinstcompare_error_count_tables</sys_name>
+        <sys_package display_value="Cross Instance Compare Tool" source="x_snc_xinstcompare">782797011b67d550034520a8ec4bcb98</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Cross Instance Compare Tool">782797011b67d550034520a8ec4bcb98</sys_scope>
+        <sys_update_name>sys_ui_message_26ccf0f81b1ca550034520a8ec4bcba1</sys_update_name>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-07 10:48:16</sys_updated_on>
+    </sys_ui_message>
+</record_update>

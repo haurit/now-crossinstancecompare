@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>eb7a606b1b0ca1508fa442e7cc4bcbf6</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="x_snc_xinstcompare_compare">
+    <x_snc_xinstcompare_compare action="INSERT_OR_UPDATE">
+        <mode>diff</mode>
+        <number>COMPDEMO004</number>
+        <output>screen</output>
+        <query/>
+        <record_left/>
+        <record_right/>
+        <remote_connection display_value="x_snc_xinstcompare.XInstanceCompare_RemoteInstance">4e8ab3491be7d550034520a8ec4bcb5c</remote_connection>
+        <remote_fields>6cab0721642120100acb2dc4941fc004,ecab0721642120100acb2dc4941fc00a,64ab0721642120100acb2dc4941fc009,a0ab0721642120100acb2dc4941fc00a</remote_fields>
+        <remote_keys element="name" name="sys_properties">6cab0721642120100acb2dc4941fc004</remote_keys>
+        <remote_selector>sysid</remote_selector>
+        <status>completed</status>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2023-01-03 12:10:20</sys_created_on>
+        <sys_id>eb7a606b1b0ca1508fa442e7cc4bcbf6</sys_id>
+        <sys_mod_count>13</sys_mod_count>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-08 07:07:00</sys_updated_on>
+        <table>sys_properties</table>
+        <type>remote_list</type>
+    </x_snc_xinstcompare_compare>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2023-01-08 07:08:33</sys_created_on>
+        <sys_id>0885d9811b10e9508fa442e7cc4bcb72</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>COMPDEMO004</sys_name>
+        <sys_package display_value="Cross Instance Compare Tool" source="x_snc_xinstcompare">782797011b67d550034520a8ec4bcb98</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Cross Instance Compare Tool">782797011b67d550034520a8ec4bcb98</sys_scope>
+        <sys_update_name>sys_metadata_link_0885d9811b10e9508fa442e7cc4bcb72</sys_update_name>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-08 07:08:33</sys_updated_on>
+        <tablename>x_snc_xinstcompare_compare</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>fbe14a091b54e9508fa442e7cc4bcb8c</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_trigger">
+    <sys_trigger action="INSERT_OR_UPDATE">
+        <application/>
+        <business_calendar/>
+        <calendar/>
+        <claimed_by/>
+        <document/>
+        <document_key/>
+        <entered_time>1970-01-01 00:00:00</entered_time>
+        <error_count>0</error_count>
+        <job_context/>
+        <job_id display_value="RunScriptJob">81c92ce9c0a8016400e5f0d2f784ea78</job_id>
+        <last_error/>
+        <log>false</log>
+        <maintenance>false</maintenance>
+        <max_drift/>
+        <name>x_snc_xinstcompare_fix_demodata</name>
+        <next_action>2022-12-31 23:00:00</next_action>
+        <offset/>
+        <offset_type>0</offset_type>
+        <parent/>
+        <priority>100</priority>
+        <processing_duration>0</processing_duration>
+        <repeat/>
+        <replication_originator>2c8bdc5adb5463806578f22ebf9619a0</replication_originator>
+        <rollback_context_id/>
+        <run_count>0</run_count>
+        <run_dayofmonth/>
+        <run_dayofweek>1</run_dayofweek>
+        <run_month>1</run_month>
+        <run_time>1969-12-31 23:00:00</run_time>
+        <run_weekinmonth>1</run_weekinmonth>
+        <script>/*&#13;
+Cross Instance Compare Fix Demo Data&#13;
+List of fields in demo data is not working because dictionary sys_id are not stable. This script will replace the demo data field list with correct values.&#13;
+*/&#13;
+&#13;
+fixDemoData();&#13;
+&#13;
+function fixDemoData() {&#13;
+&#13;
+	var sTableName = '';&#13;
+	var grCrossInstCompare = new GlideRecord('x_snc_xinstcompare_compare');&#13;
+	grCrossInstCompare.addEncodedQuery('numberSTARTSWITHCOMPDEMO^type=remote_list^tableINv_plugin,sys_properties');&#13;
+	grCrossInstCompare.query();&#13;
+	while (grCrossInstCompare.next()) {&#13;
+		sTableName = grCrossInstCompare.getValue('table');&#13;
+		if (sTableName == 'v_plugin') {&#13;
+			grCrossInstCompare.setValue('remote_keys', getDictIds(sTableName, ['id']));&#13;
+			grCrossInstCompare.setValue('remote_fields', getDictIds(sTableName, ['id', 'name', 'active', 'version']));&#13;
+		} else if (sTableName == 'sys_properties') {&#13;
+			grCrossInstCompare.setValue('remote_keys', getDictIds(sTableName, ['name']));&#13;
+			grCrossInstCompare.setValue('remote_fields', getDictIds(sTableName, ['name', 'value', '	is_private', 'ignore_cache']));&#13;
+		} // if table&#13;
+		grCrossInstCompare.update();&#13;
+	} // while demo data&#13;
+} // function fixDemoData&#13;
+&#13;
+function getDictIds(sTableName, aFields) {&#13;
+	var aFieldSysIds = [];&#13;
+	aFields.forEach(function(sField){&#13;
+		var grDict = new GlideRecord('sys_dictionary');&#13;
+		grDict.addEncodedQuery('name=' + sTableName + '^element=' + sField);&#13;
+		grDict.query();&#13;
+		if (grDict.next()) {&#13;
+			aFieldSysIds.push(grDict.getUniqueValue());&#13;
+		} // if dict&#13;
+	}); // each field&#13;
+	return aFieldSysIds.join(',');&#13;
+} // function getDictIds</script>
+        <state>0</state>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2023-01-08 10:23:39</sys_created_on>
+        <sys_id>fbe14a091b54e9508fa442e7cc4bcb8c</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-08 10:23:39</sys_updated_on>
+        <system_id/>
+        <time_zone/>
+        <trigger_class>DEFAULT</trigger_class>
+		<trigger_type>0</trigger_type>
+        <upgrade_safe>false</upgrade_safe>
+    </sys_trigger>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2023-01-08 10:24:26</sys_created_on>
+        <sys_id>255246891b54e9508fa442e7cc4bcbcb</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>x_snc_xinstcompare_fix_demodata</sys_name>
+        <sys_package display_value="Cross Instance Compare Tool" source="x_snc_xinstcompare">782797011b67d550034520a8ec4bcb98</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Cross Instance Compare Tool">782797011b67d550034520a8ec4bcb98</sys_scope>
+        <sys_update_name>sys_metadata_link_255246891b54e9508fa442e7cc4bcbcb</sys_update_name>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-08 10:34:31</sys_updated_on>
+        <tablename>sys_trigger</tablename>
+    </sys_metadata_link>
+</record_update>
