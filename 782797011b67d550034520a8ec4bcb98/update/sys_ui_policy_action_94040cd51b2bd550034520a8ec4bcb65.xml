@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_policy_action">
+    <sys_ui_policy_action action="INSERT_OR_UPDATE">
+        <cleared>false</cleared>
+        <disabled>ignore</disabled>
+        <field>record_right</field>
+        <mandatory>ignore</mandatory>
+        <sys_class_name>sys_ui_policy_action</sys_class_name>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2022-12-02 13:04:03</sys_created_on>
+        <sys_id>94040cd51b2bd550034520a8ec4bcb65</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>record_right</sys_name>
+        <sys_package display_value="Cross Instance Compare Tool" source="x_snc_xinstcompare">782797011b67d550034520a8ec4bcb98</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Cross Instance Compare Tool">782797011b67d550034520a8ec4bcb98</sys_scope>
+        <sys_update_name>sys_ui_policy_action_94040cd51b2bd550034520a8ec4bcb65</sys_update_name>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2022-12-02 13:04:03</sys_updated_on>
+        <table>x_snc_xinstcompare_compare</table>
+        <ui_policy display_value="Local">f2e308d51b2bd550034520a8ec4bcbb2</ui_policy>
+        <visible>true</visible>
+    </sys_ui_policy_action>
+</record_update>

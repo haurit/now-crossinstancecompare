@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_policy_action">
+    <sys_ui_policy_action action="INSERT_OR_UPDATE">
+        <cleared>false</cleared>
+        <disabled>ignore</disabled>
+        <field>table</field>
+        <mandatory>ignore</mandatory>
+        <sys_class_name>sys_ui_policy_action</sys_class_name>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2023-01-06 07:14:18</sys_created_on>
+        <sys_id>ea83479cdb942550f4702c8605961900</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>table</sys_name>
+        <sys_package display_value="Cross Instance Compare Tool" source="x_snc_xinstcompare">782797011b67d550034520a8ec4bcb98</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Cross Instance Compare Tool">782797011b67d550034520a8ec4bcb98</sys_scope>
+        <sys_update_name>sys_ui_policy_action_ea83479cdb942550f4702c8605961900</sys_update_name>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-06 07:15:38</sys_updated_on>
+        <table>x_snc_xinstcompare_compare</table>
+        <ui_policy display_value="Remote (Count)">f5230f5cdb942550f4702c86059619fc</ui_policy>
+        <visible>false</visible>
+    </sys_ui_policy_action>
+</record_update>

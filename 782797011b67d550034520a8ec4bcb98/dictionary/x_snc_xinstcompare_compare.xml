@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="7848db411b67d550034520a8ec4bcbac" label="Compare" max_length="40" name="x_snc_xinstcompare_compare" type="collection">
+        <element choice="3" default="diff" label="Mode" mandatory="true" max_length="40" name="mode" type="choice">
+            <choice>
+                <element inactive_on_update="false" label="All differences" sequence="100" value="diff"/>
+                <element inactive_on_update="false" label="Local only" sequence="200" value="local"/>
+                <element inactive_on_update="false" label="Remote only" sequence="300" value="remote"/>
+                <element inactive_on_update="false" label="Difference only" sequence="400" value="diffonly"/>
+                <element inactive_on_update="false" label="All" sequence="500" value="all"/>
+            </choice>
+        </element>
+        <element attributes="edge_encryption_enabled=true" default="javascript:global.getNextObjNumberPadded();" label="Number" max_length="40" name="number" read_only="true" type="string"/>
+        <element choice="1" default="screen" label="Output" max_length="40" name="output" type="choice">
+            <choice>
+                <element inactive_on_update="false" label="Screen" sequence="100" value="screen"/>
+                <element inactive_on_update="false" label="Attachment (CSV)" sequence="200" value="attach_csv"/>
+            </choice>
+        </element>
+        <element dependent="table" dependent_on_field="table" label="Query" max_length="4000" name="query" type="conditions" use_dependent_field="true"/>
+        <element dependent="table" dependent_on_field="table" label="Left Record" max_length="32" name="record_left" type="document_id" use_dependent_field="true"/>
+        <element dependent="table" dependent_on_field="table" label="Record right" max_length="32" name="record_right" type="document_id" use_dependent_field="true"/>
+        <element default="4e8ab3491be7d550034520a8ec4bcb5c" label="Remote Connection" max_length="32" name="remote_connection" reference="sys_alias" type="reference"/>
+        <element attributes="no_sort=true,slushbucket_ref_no_expand=true,maintain_order=true" dependent="table" dependent_on_field="table" label="Remote fields" max_length="4000" name="remote_fields" reference="sys_dictionary" reference_qual="javascript:new global.CrossInstanceCompareGlobal().getTableRefQualifier(current)" type="glide_list" use_dependent_field="true" use_reference_qualifier="advanced"/>
+        <element attributes="no_sort=true,slushbucket_ref_no_expand=true" dependent="table" dependent_on_field="table" label="Remote keys" max_length="4000" name="remote_keys" reference="sys_dictionary" reference_qual="javascript:new global.CrossInstanceCompareGlobal().getTableRefQualifier(current)" type="glide_list" use_dependent_field="true" use_reference_qualifier="advanced"/>
+        <element choice="3" default="sysid" label="Remote selector" max_length="40" name="remote_selector" type="choice">
+            <choice>
+                <element inactive_on_update="false" label="SysId" sequence="100" value="sysid"/>
+                <element inactive_on_update="false" label="Fields" sequence="200" value="field"/>
+                <element inactive_on_update="false" label="Query" sequence="300" value="query"/>
+            </choice>
+        </element>
+        <element choice="3" default="complete" label="Status" max_length="40" name="status" read_only="true" type="choice">
+            <choice>
+                <element inactive_on_update="false" label="Complete" sequence="100" value="complete"/>
+                <element inactive_on_update="false" label="Running" sequence="200" value="running"/>
+            </choice>
+        </element>
+        <element attributes="base_start=true" label="Table" max_length="80" name="table" type="table_name"/>
+        <element attributes="edge_encryption_enabled=true" choice="3" default="local" label="Type" max_length="40" name="type" type="choice">
+            <choice>
+                <element inactive_on_update="false" label="Local (One)" sequence="0" value="local"/>
+                <element inactive_on_update="false" label="Remote (One)" sequence="1" value="remote_one"/>
+                <element inactive_on_update="false" label="Remote (List)" sequence="2" value="remote_list"/>
+                <element inactive_on_update="false" label="Remote (Count)" sequence="3" value="remote_count"/>
+            </choice>
+        </element>
+        <index name="index">
+            <element name="record_left"/>
+        </index>
+        <index name="index2">
+            <element name="record_right"/>
+        </index>
+        <index name="index3">
+            <element name="remote_connection"/>
+        </index>
+    </element>
+</database>

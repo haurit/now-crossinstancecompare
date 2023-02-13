@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_documentation element="record_left" label="Left Record" language="en" table="x_snc_xinstcompare_compare">
+        <sys_documentation action="INSERT_OR_UPDATE">
+            <element>record_left</element>
+            <help/>
+            <hint/>
+            <label>Left Record</label>
+            <language>en</language>
+            <name>x_snc_xinstcompare_compare</name>
+            <plural>Left Records</plural>
+            <sys_class_name>sys_documentation</sys_class_name>
+            <sys_created_by>tom.hauri</sys_created_by>
+            <sys_created_on>2022-12-02 12:32:15</sys_created_on>
+            <sys_mod_count>1</sys_mod_count>
+            <sys_name>Left Record</sys_name>
+            <sys_package display_value="Cross Instance Compare Tool" source="x_snc_xinstcompare">782797011b67d550034520a8ec4bcb98</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="Cross Instance Compare Tool">782797011b67d550034520a8ec4bcb98</sys_scope>
+            <sys_update_name>sys_documentation_x_snc_xinstcompare_compare_record_left_en</sys_update_name>
+            <sys_updated_by>tom.hauri</sys_updated_by>
+            <sys_updated_on>2022-12-06 20:25:09</sys_updated_on>
+            <url/>
+            <url_target/>
+        </sys_documentation>
+    </sys_documentation>
+</record_update>

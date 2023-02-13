@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_ui_action">
+    <sys_ui_action action="INSERT_OR_UPDATE">
+        <action_name>sysverb_compare</action_name>
+        <active>true</active>
+        <client>true</client>
+        <client_script_v2><![CDATA[function onClick(g_form) {
+
+}]]></client_script_v2>
+        <comments/>
+        <condition/>
+        <form_action>true</form_action>
+        <form_button>true</form_button>
+        <form_button_v2>false</form_button_v2>
+        <form_context_menu>false</form_context_menu>
+        <form_link>false</form_link>
+        <form_menu_button_v2>false</form_menu_button_v2>
+        <form_style>primary</form_style>
+        <format_for_configurable_workspace>false</format_for_configurable_workspace>
+        <hint/>
+        <isolate_script>true</isolate_script>
+        <list_action>false</list_action>
+        <list_banner_button>false</list_banner_button>
+        <list_button>false</list_button>
+        <list_choice>false</list_choice>
+        <list_context_menu>false</list_context_menu>
+        <list_link>false</list_link>
+        <list_save_with_form_button>false</list_save_with_form_button>
+        <list_style/>
+        <messages/>
+        <name>Compare</name>
+        <onclick>compare()</onclick>
+        <order>-1000</order>
+        <script><![CDATA[function compare() {
+	var gaCompare = new GlideAjax("CompareAJAX");
+	gaCompare.addParam("sysparm_name", "compare");
+	gaCompare.addParam("sysparm_sys_id", g_form.getUniqueValue());
+	gaCompare.addParam("sysparm_number", g_form.getValue('number'));
+	gaCompare.addParam("sysparm_type", g_form.getValue('type'));
+	gaCompare.addParam("sysparm_output",  g_form.getValue('output'));
+	gaCompare.addParam("sysparm_record_left", g_form.getValue('record_left'));
+	gaCompare.addParam("sysparm_record_right", g_form.getValue('record_right'));
+	gaCompare.addParam("sysparm_remote_selector", g_form.getValue('remote_selector'));
+	gaCompare.addParam("sysparm_remote_keys", g_form.getValue('remote_keys'));
+	gaCompare.addParam("sysparm_remote_fields", g_form.getValue('remote_fields'));
+	gaCompare.addParam("sysparm_table", g_form.getValue('table'));
+	gaCompare.addParam("sysparm_query", g_form.getValue('query'));
+	gaCompare.addParam("sysparm_remote_connection", g_form.getValue('remote_connection'));
+	gaCompare.addParam("sysparm_mode", g_form.getValue('mode'));
+	if (((g_form.getValue('type') == 'remote_list') || (g_form.getValue('type') == 'remote_count')) && (g_form.getValue('output') == 'attach_csv')) {
+		gaCompare.getXMLAnswer(showCompareAttach);
+	} else {
+		gaCompare.getXMLAnswer(showCompareScreen);
+	} // function compare
+} // function compare
+
+function showCompareScreen(sReturn) {
+	var oReturn = sReturn.evalJSON();
+	if (oReturn.valid == true) {
+		var dialog = new GlideBox({
+			body: oReturn.html,
+			title: oReturn.title,
+			height: '95%',
+			width: '95%',
+			autoDimensionOnLoad: true
+		}); // glidebox
+		oReturn.html.evalScripts(true);
+		dialog.render();
+	} else {
+		if (oReturn.refresh == true) {
+			location.reload();
+		} // if refresh
+		g_form.addErrorMessage(oReturn.msg);
+	} // if valid
+} // function showCompareScreen
+
+function showCompareAttach(sReturn) {
+	var oReturn = sReturn.evalJSON();
+	if (oReturn.valid == true) {
+		location.reload();
+	} else {
+		if (oReturn.refresh == true) {
+			location.reload();
+		} // if refresh
+		g_form.addInfoMessage(oReturn.msg);
+	}
+} // function showCompareAttach]]></script>
+        <show_insert>false</show_insert>
+        <show_multiple_update>false</show_multiple_update>
+        <show_query>false</show_query>
+        <show_update>true</show_update>
+        <sys_class_name>sys_ui_action</sys_class_name>
+        <sys_created_by>tom.hauri</sys_created_by>
+        <sys_created_on>2022-12-02 13:18:49</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>5aa580991b2bd550034520a8ec4bcbf5</sys_id>
+        <sys_mod_count>15</sys_mod_count>
+        <sys_name>Compare</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="Cross Instance Compare Tool" source="x_snc_xinstcompare">782797011b67d550034520a8ec4bcb98</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Cross Instance Compare Tool">782797011b67d550034520a8ec4bcb98</sys_scope>
+        <sys_update_name>sys_ui_action_5aa580991b2bd550034520a8ec4bcbf5</sys_update_name>
+        <sys_updated_by>tom.hauri</sys_updated_by>
+        <sys_updated_on>2023-01-07 10:26:07</sys_updated_on>
+        <table>x_snc_xinstcompare_compare</table>
+        <ui11_compatible>true</ui11_compatible>
+        <ui16_compatible>true</ui16_compatible>
+    </sys_ui_action>
+</record_update>
