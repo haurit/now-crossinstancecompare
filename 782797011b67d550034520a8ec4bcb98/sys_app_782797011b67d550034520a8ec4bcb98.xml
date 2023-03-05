@@ -29,23 +29,26 @@
         <sys_created_by>tom.hauri</sys_created_by>
         <sys_created_on>2022-12-02 09:47:51</sys_created_on>
         <sys_id>782797011b67d550034520a8ec4bcb98</sys_id>
-        <sys_mod_count>6</sys_mod_count>
+        <sys_mod_count>7</sys_mod_count>
         <sys_updated_by>tom.hauri</sys_updated_by>
-        <sys_updated_on>2023-01-07 10:54:09</sys_updated_on>
+        <sys_updated_on>2023-03-05 19:38:23</sys_updated_on>
         <template/>
         <trackable>true</trackable>
         <uninstall_blocked>false</uninstall_blocked>
         <user_role display_value="admin" name="admin">2831a114c611228501d4ea6c309d626d</user_role>
         <vendor/>
         <vendor_prefix/>
-        <version>1.0.2</version>
+        <version>1.0.3</version>
+        <x_snc_devtools_documentation_url/>
+        <x_snc_devtools_maintainer/>
+        <x_snc_devtools_maintainer_email/>
+        <x_snc_devtools_repo_url>https://github.com/haurit/now-crossinstancecompare</x_snc_devtools_repo_url>
     </sys_app>
     <sys_attachment action="INSERT_OR_UPDATE">
         <average_image_color>#dbdee0</average_image_color>
         <chunk_size_bytes>700000</chunk_size_bytes>
         <compressed>true</compressed>
         <content_type>image/jpeg</content_type>
-        <encryption_context/>
         <file_name>logo</file_name>
         <hash>6760e9cacffe3027ff65f9f18286670dee9835e8467fa820d8db69da5d0fee01</hash>
         <image_height>226</image_height>

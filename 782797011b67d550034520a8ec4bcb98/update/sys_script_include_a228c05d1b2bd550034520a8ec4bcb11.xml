@@ -22,6 +22,7 @@ CompareAJAX.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
 		this.bShowCompareCharCodeInLog = true;
 		this.iRemoteRecordsChunkSize = 1000;
 		this.iMaxTablesForCount = 500;
+		this.iMaxUseLocalFilterForDiff = 1000;
 	}, // function _setDefaults
 
 	// Compare function 
@@ -123,10 +124,23 @@ CompareAJAX.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
 	}, // function _compareRemoteOne
 
 	_compareRemoteList: function() {
+		var _CompareGlobal = new global.CrossInstanceCompareGlobal();
 		this.oResp.title = gs.getMessage('xinstcompare_title_remote_list');
 		var aKeys = (this.oParams['remote_keys']) ? this._parseFields(this.oParams['remote_keys']) : ['sys_id'];
 		var aFields = (this.oParams['remote_fields']) ? this._parseFields(this.oParams['remote_fields']) : new global.CrossInstanceCompareGlobal().getAllFields(this.oParams['table']);
+		var sLocalQuery = '';
+		if ((this.oParams['mode'] == 'diffonly') && (Number(_CompareGlobal.countRecords(this.oParams['table'], this.oParams['query'])) < this.iMaxUseLocalFilterForDiff)) {
+			var aLocalRecordIds = [];
+			var grLocalRecord = new GlideRecord(this.oParams['table']);
+			grLocalRecord.addEncodedQuery(this.oParams['query']);
+			grLocalRecord.query();
+			while (grLocalRecord.next()) {
+				aLocalRecordIds.push(grLocalRecord.getUniqueValue());
+			} // while local record
+			sLocalQuery = 'sys_idIN' + aLocalRecordIds.join(',');
+		} // if diff only check if we can limit results based on existing records
 		var sQuery = (this.oParams['query']) ? this.oParams['query'] + '^ORDERBY' + aFields[0] : 'ORDERBY' + aFields[0];
+		sQuery = (sLocalQuery) ? sLocalQuery + '^' + sQuery : sQuery;
 		this._getRemoteRecords(sQuery, aFields);
 		if ((this.oResp.valid) && (this.oResponseBody.hasOwnProperty('result')) && (Array.isArray(this.oResponseBody['result']))) {
 			var _getInternalType = new global.CrossInstanceCompareGlobal().getInternalType;
@@ -578,21 +592,21 @@ CompareAJAX.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
 	}, // function _callFlowAPI
 
 	type: 'CompareAJAX',
-	version: '1.0.2',
-	author: 'Tom Hauri',
-	email: 'tom@hauri.biz'
+	version: '1.0.3',
+	author: 'ServiceNow Expert Services, Tom Hauri',
+	email: 'tom.hauri@servicenow.com'
 });]]></script>
         <sys_class_name>sys_script_include</sys_class_name>
         <sys_created_by>tom.hauri</sys_created_by>
         <sys_created_on>2022-12-02 13:27:42</sys_created_on>
         <sys_id>a228c05d1b2bd550034520a8ec4bcb11</sys_id>
-        <sys_mod_count>230</sys_mod_count>
+        <sys_mod_count>231</sys_mod_count>
         <sys_name>CompareAJAX</sys_name>
         <sys_package display_value="Cross Instance Compare Tool" source="x_snc_xinstcompare">782797011b67d550034520a8ec4bcb98</sys_package>
         <sys_policy>read</sys_policy>
         <sys_scope display_value="Cross Instance Compare Tool">782797011b67d550034520a8ec4bcb98</sys_scope>
         <sys_update_name>sys_script_include_a228c05d1b2bd550034520a8ec4bcb11</sys_update_name>
         <sys_updated_by>tom.hauri</sys_updated_by>
-        <sys_updated_on>2023-02-22 15:58:56</sys_updated_on>
+        <sys_updated_on>2023-03-05 19:37:35</sys_updated_on>
     </sys_script_include>
 </record_update>
